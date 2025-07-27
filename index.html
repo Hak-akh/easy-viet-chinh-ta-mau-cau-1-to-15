@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling Game: Sentence Structures</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* New friendly, warm theme */
+            --primary-color: #ff6f61; /* Living Coral */
+            --primary-hover: #ff8b80;
+            --background-gradient: linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%); /* Peach to Sky Blue */
+            --container-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #5d5d5d; /* Dark Gray */
+            --light-text: #777777;
+            --success-color: #5cb85c;
+            --error-color: #d9534f;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Poppins', sans-serif;
+            background: var(--background-gradient);
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            overflow-x: hidden;
+            color: var(--text-color);
+        }
+        #game-container {
+            text-align: center;
+            background: var(--container-bg);
+            padding: 25px 30px;
+            border-radius: 24px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 680px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+        }
+        h1 {
+            font-size: clamp(24px, 5vw, 32px);
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        p {
+            font-size: clamp(15px, 4vw, 17px);
+            line-height: 1.6;
+            margin-top: 0;
+        }
+        .instruction-vi {
+            font-size: clamp(13px, 3.5vw, 15px);
+            color: var(--light-text);
+            margin-top: 4px;
+            display: block;
+        }
+        .instruction-extra {
+            font-size: clamp(13px, 3.5vw, 14px);
+            color: var(--error-color);
+            font-weight: 600;
+            margin-top: 4px;
+            display: block;
+        }
+        /* NEW: Style for the Vietnamese translation display */
+        #vietnamese-translation {
+            font-size: clamp(16px, 4.5vw, 19px);
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 20px 0 10px 0;
+            padding: 10px;
+            background-color: rgba(255, 111, 97, 0.1);
+            border-radius: 12px;
+            min-height: 30px;
+        }
+        input[type="text"] {
+            padding: 12px 18px;
+            font-size: clamp(14px, 4vw, 16px);
+            width: 100%;
+            max-width: 500px;
+            margin: 15px 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            border: 2px solid #ced4da;
+            border-radius: 10px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(255, 111, 97, 0.25);
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: clamp(14px, 4vw, 16px);
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            touch-action: manipulation;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 111, 97, 0.2);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        #hint {
+            color: var(--light-text);
+            font-style: italic;
+            margin-top: 15px;
+            font-size: clamp(13px, 3.5vw, 15px);
+            user-select: none;
+            line-height: 1.5;
+            min-height: 22px;
+        }
+        #completion, #result {
+            font-size: clamp(15px, 4vw, 18px);
+            font-weight: 600;
+            margin-top: 15px;
+            min-height: 27px;
+        }
+        #result.correct {
+            color: var(--success-color);
+        }
+        #result.incorrect {
+            color: var(--error-color);
+        }
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Spelling Game: Structures</h1>
+        <p>Click Start to begin the game!<span class="instruction-vi">Nhấn Bắt đầu để chơi!</span></p>
+        <button onclick="startGame()">Start</button>
+    </div>
+
+    <script>
+        // Data for the game
+        const sentences = [
+            { english: "The box is too heavy for me to lift.", vietnamese: "Cái hộp quá nặng để tôi nhấc lên." },
+            { english: "The box is so heavy that I cannot lift it.", vietnamese: "Cái hộp nặng đến nỗi tôi không thể nhấc nó lên." },
+            { english: "He ran too fast for me to follow.", vietnamese: "Anh ấy chạy quá nhanh để tôi theo kịp." },
+            { english: "He ran so fast that I could not follow him.", vietnamese: "Anh ấy chạy nhanh đến nỗi tôi không thể theo kịp anh ấy." },
+            { english: "It is such a boring film that I fell asleep.", vietnamese: "Đó là một bộ phim chán đến nỗi tôi đã ngủ gật." },
+            { english: "The film is so boring that I fell asleep.", vietnamese: "Bộ phim chán đến nỗi tôi đã ngủ gật." },
+            { english: "The water is too hot for her to touch.", vietnamese: "Nước quá nóng để cô ấy chạm vào." },
+            { english: "The water is so hot that she cannot touch it.", vietnamese: "Nước nóng đến nỗi cô ấy không thể chạm vào nó." },
+            { english: "That is such an expensive dress that I cannot afford it.", vietnamese: "Đó là một chiếc váy đắt tiền đến nỗi tôi không thể mua được." },
+            { english: "The dress is too expensive for me to buy.", vietnamese: "Chiếc váy quá đắt để tôi mua." },
+            { english: "The cake is so sweet that I cannot eat it.", vietnamese: "Bánh ngọt đến nỗi tôi không thể ăn được." },
+            { english: "The cake is too sweet for me to eat.", vietnamese: "Bánh quá ngọt để tôi ăn." },
+            { english: "She is too young to drive a car.", vietnamese: "Cô ấy quá trẻ để lái xe hơi." },
+            { english: "She is not old enough to drive a car.", vietnamese: "Cô ấy không đủ tuổi để lái xe hơi." },
+            { english: "He is very strong. He can carry that box.", vietnamese: "Anh ấy rất khỏe. Anh ấy có thể mang cái hộp đó." },
+            { english: "He is strong enough to carry that box.", vietnamese: "Anh ấy đủ khỏe để mang cái hộp đó." },
+            { english: "This structure is too easy for you to forget.", vietnamese: "Cấu trúc này quá dễ để bạn quên." },
+            { english: "This structure is so easy that you cannot forget it.", vietnamese: "Cấu trúc này dễ đến nỗi bạn không thể quên được." },
+            { english: "The box is so big that I cannot move it.", vietnamese: "Cái hộp to đến nỗi tôi không thể di chuyển nó." },
+            { english: "It is such a big box that I cannot move it.", vietnamese: "Đó là một cái hộp to đến nỗi tôi không thể di chuyển nó." },
+            { english: "I fixed my phone yesterday.", vietnamese: "Tôi đã sửa điện thoại của mình hôm qua." },
+            { english: "I had my phone fixed yesterday.", vietnamese: "Hôm qua tôi đã đem điện thoại đi sửa." },
+            { english: "He cleaned the room last week.", vietnamese: "Anh ấy đã dọn phòng tuần trước." },
+            { english: "He had the room cleaned last week.", vietnamese: "Tuần trước anh ấy đã cho người dọn phòng." },
+            { english: "My mom cut my hair.", vietnamese: "Mẹ tôi đã cắt tóc cho tôi." },
+            { english: "I had my hair cut by my mom.", vietnamese: "Tôi được mẹ cắt tóc cho." },
+            { english: "I paid a man to wash my car.", vietnamese: "Tôi đã trả tiền cho một người đàn ông để rửa xe của tôi." },
+            { english: "I got my car washed.", vietnamese: "Tôi đã mang xe đi rửa." },
+            { english: "I spent 30 minutes going to school.", vietnamese: "Tôi đã dành 30 phút để đi đến trường." },
+            { english: "It took me 30 minutes to go to school.", vietnamese: "Tôi mất 30 phút để đi đến trường." },
+            { english: "They spent an hour doing the exercise.", vietnamese: "Họ đã dành một giờ để làm bài tập." },
+            { english: "It took them an hour to do the exercise.", vietnamese: "Họ mất một giờ để làm bài tập." },
+            { english: "I often went fishing with my grandpa.", vietnamese: "Tôi thường đi câu cá với ông tôi." },
+            { english: "I used to go fishing with my grandpa.", vietnamese: "Tôi đã từng đi câu cá với ông tôi." },
+            { english: "She smoked a lot in the past.", vietnamese: "Cô ấy đã hút rất nhiều thuốc trong quá khứ." },
+            { english: "She used to smoke a lot.", vietnamese: "Cô ấy đã từng hút rất nhiều thuốc." },
+            { english: "I am familiar with using chopsticks.", vietnamese: "Tôi quen với việc sử dụng đũa." },
+            { english: "I am used to using chopsticks.", vietnamese: "Tôi đã quen dùng đũa." },
+            { english: "We gradually got familiar with waking up early.", vietnamese: "Chúng tôi dần quen với việc dậy sớm." },
+            { english: "We got used to waking up early.", vietnamese: "Chúng tôi đã quen với việc dậy sớm." },
+            { english: "She was surprised at the news.", vietnamese: "Cô ấy đã ngạc nhiên trước tin tức đó." },
+            { english: "She was amazed at the news.", vietnamese: "Cô ấy đã kinh ngạc trước tin tức đó." },
+            { english: "He was surprised by how fast she ran.", vietnamese: "Anh ấy đã ngạc nhiên về tốc độ cô ấy chạy." },
+            { english: "He was amazed at how fast she ran.", vietnamese: "Anh ấy đã kinh ngạc về tốc độ cô ấy chạy." },
+            { english: "He was angry because she came home late.", vietnamese: "Anh ấy đã tức giận vì cô ấy về nhà muộn." },
+            { english: "He was angry at her coming home late.", vietnamese: "Anh ấy đã tức giận về việc cô ấy về nhà muộn." },
+            { english: "The teacher was angry because of his laziness.", vietnamese: "Giáo viên đã tức giận vì sự lười biếng của cậu ấy." },
+            { english: "The teacher was angry at his laziness.", vietnamese: "Giáo viên đã tức giận với sự lười biếng của cậu ấy." },
+            { english: "I think learning English is difficult.", vietnamese: "Tôi nghĩ học tiếng Anh thì khó." },
+            { english: "I find it difficult to learn English.", vietnamese: "Tôi thấy việc học tiếng Anh thật khó." },
+            { english: "They think solving this math problem is easy.", vietnamese: "Họ nghĩ rằng giải bài toán này thì dễ." },
+            { english: "They find it easy to solve this math problem.", vietnamese: "Họ thấy việc giải bài toán này thật dễ dàng." },
+            { english: "I prefer coffee to tea.", vietnamese: "Tôi thích cà phê hơn trà." },
+            { english: "I’d rather drink coffee than tea.", vietnamese: "Tôi thà uống cà phê còn hơn uống trà." },
+            { english: "I prefer staying at home to going out.", vietnamese: "Tôi thích ở nhà hơn là đi chơi." },
+            { english: "I would rather stay at home than go out.", vietnamese: "Tôi thà ở nhà còn hơn ra ngoài." },
+            { english: "I cannot stop her from crying.", vietnamese: "Tôi không thể ngăn cô ấy khóc." },
+            { english: "I cannot prevent her from crying.", vietnamese: "Tôi không thể ngăn cản cô ấy khóc." },
+            { english: "The rules stopped us from using the phone.", vietnamese: "Các quy tắc đã ngăn chúng tôi sử dụng điện thoại." },
+            { english: "The rules prevented us from using the phone.", vietnamese: "Các quy tắc đã ngăn cản chúng tôi sử dụng điện thoại." },
+            { english: "The bag was too heavy for her to carry.", vietnamese: "Cái túi quá nặng để cô ấy mang." },
+            { english: "The bag was so heavy that she couldn’t carry it.", vietnamese: "Cái túi nặng đến nỗi cô ấy không thể mang nó." },
+            { english: "My father built this house last year.", vietnamese: "Bố tôi đã xây ngôi nhà này vào năm ngoái." },
+            { english: "My father had this house built last year.", vietnamese: "Bố tôi đã cho xây ngôi nhà này vào năm ngoái." },
+            { english: "I took 30 minutes to go to school.", vietnamese: "Tôi mất 30 phút để đi đến trường." },
+            { english: "It took me 30 minutes to go to school.", vietnamese: "Tôi mất 30 phút để đi đến trường." },
+            { english: "I prefer tea to coffee.", vietnamese: "Tôi thích trà hơn cà phê." },
+            { english: "I would rather drink tea than coffee.", vietnamese: "Tôi thà uống trà còn hơn uống cà phê." },
+            { english: "When I was young, I played with marbles.", vietnamese: "Khi tôi còn nhỏ, tôi đã chơi bắn bi." },
+            { english: "I used to play with marbles when I was young.", vietnamese: "Tôi đã từng chơi bắn bi khi còn nhỏ." },
+            { english: "The room is too noisy for me to concentrate.", vietnamese: "Căn phòng quá ồn ào để tôi tập trung." },
+            { english: "The room is so noisy that I cannot concentrate.", vietnamese: "Căn phòng ồn ào đến nỗi tôi không thể tập trung." },
+            { english: "They painted the house in blue.", vietnamese: "Họ đã sơn ngôi nhà màu xanh." },
+            { english: "They had the house painted in blue.", vietnamese: "Họ đã cho sơn ngôi nhà màu xanh." },
+            { english: "I spent 3 hours cleaning my room.", vietnamese: "Tôi đã dành 3 giờ để dọn dẹp phòng của mình." },
+            { english: "It took me 3 hours to clean my room.", vietnamese: "Tôi mất 3 giờ để dọn dẹp phòng của mình." },
+            { english: "I like reading novels more than watching films.", vietnamese: "Tôi thích đọc tiểu thuyết hơn xem phim." },
+            { english: "I would rather read novels than watch films.", vietnamese: "Tôi thà đọc tiểu thuyết còn hơn xem phim." },
+            { english: "When she was a child, she lived in the countryside.", vietnamese: "Khi còn là một đứa trẻ, cô ấy đã sống ở nông thôn." },
+            { english: "She used to live in the countryside.", vietnamese: "Cô ấy đã từng sống ở nông thôn." },
+            { english: "The film was too boring for us to enjoy.", vietnamese: "Bộ phim quá nhàm chán để chúng tôi thưởng thức." },
+            { english: "The film was so boring that we did not enjoy it.", vietnamese: "Bộ phim chán đến nỗi chúng tôi không thích nó." },
+            { english: "My mother asked a tailor to make this dress.", vietnamese: "Mẹ tôi đã nhờ một thợ may để may chiếc váy này." },
+            { english: "My mother had this dress made by a tailor.", vietnamese: "Mẹ tôi đã cho thợ may may chiếc váy này." },
+            { english: "I spent half an hour doing this puzzle.", vietnamese: "Tôi đã dành nửa giờ để giải câu đố này." },
+            { english: "It took me half an hour to do this puzzle.", vietnamese: "Tôi mất nửa giờ để giải câu đố này." },
+            { english: "He prefers staying at home to going out.", vietnamese: "Anh ấy thích ở nhà hơn là đi chơi." },
+            { english: "He would rather stay at home than go out.", vietnamese: "Anh ấy thà ở nhà còn hơn ra ngoài." },
+            { english: "I often walked to school when I was in grade 5.", vietnamese: "Tôi thường đi bộ đến trường khi tôi học lớp 5." },
+            { english: "I used to walk to school when I was in grade 5.", vietnamese: "Tôi đã từng đi bộ đến trường khi tôi học lớp 5." },
+            { english: "The soup is too hot for the baby to eat.", vietnamese: "Súp quá nóng để em bé ăn." },
+            { english: "The soup is so hot that the baby cannot eat it.", vietnamese: "Súp nóng đến nỗi em bé không thể ăn được." },
+            { english: "She asked the hairdresser to cut her hair.", vietnamese: "Cô ấy đã nhờ thợ làm tóc cắt tóc cho mình." },
+            { english: "She had her hair cut by the hairdresser.", vietnamese: "Cô ấy đã được thợ làm tóc cắt tóc cho." },
+            { english: "I spent one hour finishing the test.", vietnamese: "Tôi đã dành một giờ để hoàn thành bài kiểm tra." },
+            { english: "It took me one hour to finish the test.", vietnamese: "Tôi mất một giờ để hoàn thành bài kiểm tra." },
+            { english: "I prefer dancing to singing.", vietnamese: "Tôi thích khiêu vũ hơn ca hát." },
+            { english: "I would rather dance than sing.", vietnamese: "Tôi thà khiêu vũ còn hơn ca hát." },
+            { english: "He was in the habit of drinking coffee every morning.", vietnamese: "Anh ấy có thói quen uống cà phê mỗi sáng." },
+            { english: "He used to drink coffee every morning.", vietnamese: "Anh ấy đã từng uống cà phê mỗi sáng." },
+            { english: "This exercise is too hard for me to do.", vietnamese: "Bài tập này quá khó để tôi làm." },
+            { english: "This exercise is so hard that I cannot do it.", vietnamese: "Bài tập này khó đến nỗi tôi không thể làm được." },
+            { english: "He hired someone to fix his motorbike.", vietnamese: "Anh ấy đã thuê người sửa xe máy của mình." },
+            { english: "He had his motorbike fixed.", vietnamese: "Anh ấy đã cho người sửa xe máy của mình." },
+            { english: "She spent all day preparing for the meeting.", vietnamese: "Cô ấy đã dành cả ngày để chuẩn bị cho cuộc họp." },
+            { english: "It took her all day to prepare for the meeting.", vietnamese: "Cô ấy mất cả ngày để chuẩn bị cho cuộc họp." },
+            { english: "I prefer staying home on weekends.", vietnamese: "Tôi thích ở nhà vào cuối tuần hơn." },
+            { english: "I would rather stay home on weekends.", vietnamese: "Tôi thà ở nhà vào cuối tuần còn hơn." },
+            { english: "He went fishing every Sunday when he was young.", vietnamese: "Anh ấy đi câu cá mỗi Chủ nhật khi còn trẻ." },
+            { english: "He used to go fishing every Sunday.", vietnamese: "Anh ấy đã từng đi câu cá mỗi Chủ nhật." }
+        ];
+        let currentSentenceIndex = 0;
+        let completedCount = 0;
+        let isPlaying = false;
+        let autoPlayInterval;
+        let wrongAttempts = 0;
+        const TOTAL_SENTENCES = sentences.length;
+
+        function showCelebrationEffect() {
+            const gameContainer = document.getElementById('game-container');
+            const colors = ['#ff6f61', '#ff8b80', '#ace0f9', '#ffc107', '#5cb85c'];
+
+            for (let i = 0; i < 60; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                gameContainer.appendChild(particle);
+
+                const size = Math.floor(Math.random() * 15 + 5);
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+                if (Math.random() > 0.5) {
+                    particle.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
+                } else {
+                    particle.style.borderRadius = '50%';
+                }
+
+                const destinationX = (Math.random() - 0.5) * 350;
+                const destinationY = (Math.random() - 0.5) * 350;
+                const rotation = Math.random() * 520;
+                const delay = Math.random() * 200;
+
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                
+                const animation = particle.animate([
+                    { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                    { transform: `translate(calc(-50% + ${destinationX}px), calc(-50% + ${destinationY}px)) scale(0) rotateZ(${rotation}deg)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * 1000 + 1000,
+                    easing: 'cubic-bezier(0.1, .9, .57, 1)',
+                    delay: delay
+                });
+
+                animation.onfinish = () => {
+                    particle.remove();
+                };
+            }
+        }
+
+        function playSentence() {
+            if (!isPlaying && sentences[currentSentenceIndex]) {
+                isPlaying = true;
+                const utterance = new SpeechSynthesisUtterance(sentences[currentSentenceIndex].english);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                utterance.onend = () => {
+                    isPlaying = false;
+                };
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function startAutoPlay() {
+            if (autoPlayInterval) clearInterval(autoPlayInterval);
+            autoPlayInterval = setInterval(() => {
+                if (!isPlaying) {
+                    playSentence();
+                }
+            }, 5000);
+        }
+
+        function stopAutoPlay() {
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+            }
+        }
+
+        function checkAnswer() {
+            const userInput = document.getElementById('userInput').value.trim();
+            const result = document.getElementById('result');
+            const currentSentence = sentences[currentSentenceIndex].english;
+
+            const normalizeApostrophes = (str) => {
+                return str.replace(/[’‘`]/g, "'");
+            };
+
+            if (normalizeApostrophes(userInput) === normalizeApostrophes(currentSentence)) {
+                stopAutoPlay();
+                result.textContent = "Correct!";
+                result.className = 'correct';
+                
+                showCelebrationEffect();
+                setTimeout(showCelebrationEffect, 250);
+
+                if (wrongAttempts < 2) {
+                    completedCount++;
+                }
+                
+                wrongAttempts = 0;
+                
+                setTimeout(() => {
+                    currentSentenceIndex++;
+                    if (currentSentenceIndex >= TOTAL_SENTENCES) {
+                        document.getElementById('game-container').innerHTML = `<h1>Congratulations!</h1><p>You have completed all sentences with a score of ${completedCount}/${TOTAL_SENTENCES}!</p><button onclick="resetGame()">Play Again</button>`;
+                    } else {
+                        updateGameScreen();
+                        playSentence();
+                        startAutoPlay();
+                    }
+                }, 2000);
+            } else {
+                wrongAttempts++;
+                result.textContent = `Incorrect, try again! (${3 - wrongAttempts} left)`;
+                result.className = 'incorrect';
+                if (wrongAttempts >= 3) {
+                    stopAutoPlay();
+                    wrongAttempts = 0;
+                    result.textContent = "Moving to the next sentence...";
+                    setTimeout(() => {
+                        currentSentenceIndex++;
+                        if (currentSentenceIndex >= TOTAL_SENTENCES) {
+                            document.getElementById('game-container').innerHTML = `<h1>Game Over!</h1><p>You scored ${completedCount} out of ${TOTAL_SENTENCES} sentences.</p><button onclick="resetGame()">Play Again</button>`;
+                        } else {
+                            updateGameScreen();
+                            playSentence();
+                            startAutoPlay();
+                        }
+                    }, 2000);
+                }
+            }
+        }
+
+        function updateGameScreen() {
+            if (document.getElementById('userInput')) {
+                const currentData = sentences[currentSentenceIndex];
+                document.getElementById('userInput').value = '';
+                document.getElementById('vietnamese-translation').textContent = currentData.vietnamese;
+                document.getElementById('hint').textContent = '';
+                document.getElementById('result').textContent = '';
+                document.getElementById('completion').textContent = `Score: ${completedCount}/${TOTAL_SENTENCES}`;
+            }
+        }
+
+        function showHint() {
+            const hintData = sentences[currentSentenceIndex];
+            document.getElementById('hint').innerHTML = `Hint (English): ${hintData.english}`;
+        }
+
+        function startGame() {
+            wrongAttempts = 0;
+            const currentData = sentences[currentSentenceIndex];
+            document.getElementById('game-container').innerHTML = `
+                <h1>Spelling Master</h1>
+                <p>Listen carefully and type the sentence you hear.
+                   <span class="instruction-vi">Hãy lắng nghe cẩn thận và gõ lại câu bạn nghe được.</span>
+                   <span class="instruction-extra">Lưu ý: Phải viết hoa và có dấu câu chính xác.</span>
+                </p>
+                <p id="vietnamese-translation">${currentData.vietnamese}</p>
+                <input type="text" id="userInput" placeholder="Type the sentence here...">
+                <div class="button-group">
+                    <button onclick="playSentence()">&#9658; Play Sound</button>
+                    <button onclick="checkAnswer()">Check</button>
+                    <button onclick="showHint()">Hint</button>
+                    <button onclick="resetGame()">Reset Game</button>
+                </div>
+                <p id="completion">Score: ${completedCount}/${TOTAL_SENTENCES}</p>
+                <p id="hint"></p>
+                <p id="result"></p>
+            `;
+            document.getElementById('userInput').addEventListener('keypress', handleKeyPress);
+            playSentence();
+            startAutoPlay();
+        }
+
+        function resetGame() {
+            stopAutoPlay();
+            currentSentenceIndex = 0;
+            completedCount = 0;
+            wrongAttempts = 0;
+            speechSynthesis.cancel();
+            isPlaying = false;
+            document.getElementById('game-container').innerHTML = `
+                <h1>Spelling Game: Structures</h1>
+                <p>Click Start to begin the game!<span class="instruction-vi">Nhấn Bắt đầu để chơi!</span></p>
+                <button onclick="startGame()">Start</button>
+            `;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                checkAnswer();
+            }
+        }
+    </script>
+</body>
+</html>
